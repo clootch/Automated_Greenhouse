@@ -25,23 +25,8 @@ basic concept for the entire project
 Have a main menu function that creates a bunch of threads (4 max)
 Within each thread, there is a while true loop, keeps grabbing data, sleeps for 2 minutes when its
 done with its specific tasks, then repeats
-
-"""
-"""
-TODO:
-???
 """
 
-
-"""
-#light code
-i2c = busio.I2C(board.SCL,board.SDA)
-light = adafruit_tsl2591.TSL2591(I2C)
-lux = light.lux
-infrared = light.infrared
-visible = light.visible
-full_spectrum = light.full_spectrum
-"""
 
 class data:
     def __init__(self,temp,humid,heat,cool,light,vent,shade,water,action):
@@ -56,10 +41,14 @@ class data:
         self.action = action
 
 def noData(sensName):
+    """ This function is used to send an email if there was an issue trying to access the database and either it failed to open and get data from a table. 
+        There are two instances of this function, this one, and one that will directly follow it. 
+        The reason for this difference is that the sensors that access this function are integral to the systems functionality (Soil Mositure, Internal Temperature, etc)
+    """
     SMTP_SERVER = 'smtp.gmail.com' #Email Server 
     SMTP_PORT = 587 #Server Port 
     GMAIL_USERNAME = 'Automated.Greenhouse.ttu@gmail.com' 
-    GMAIL_PASSWORD = 'RaiderPower1!' 
+    GMAIL_PASSWORD = ''
     msg = MIMEText("""Hello, I am the Automated Greenhouse. There was an issue gathering data for the {}. Could you send out an engineer to fix me? Thank you
     This sensor is integral to the greenhouse's automation, so I will be shutting down until I am fixed.
     **This is an automated message, responding to this will not notify anyone.**""".format(sensName))
@@ -79,7 +68,7 @@ def noDataExt(sensName):
     SMTP_SERVER = 'smtp.gmail.com' #Email Server 
     SMTP_PORT = 587 #Server Port 
     GMAIL_USERNAME = 'Automated.Greenhouse.ttu@gmail.com' 
-    GMAIL_PASSWORD = 'RaiderPower1!' 
+    GMAIL_PASSWORD = '' 
     msg = MIMEText("""Hello, I am the Automated Greenhouse. There was an issue gathering data for the {}. Could you send out an engineer to fix me? Thank you
     This sensor is NOT integral to the greenhouse's automation, so I will NOT be shutting down. 
     **This is an automated message, responding to this will not notify anyone.**""".format(sensName))
@@ -98,7 +87,7 @@ def dataStorageFail(sensName):
     SMTP_SERVER = 'smtp.gmail.com' #Email Server 
     SMTP_PORT = 587 #Server Port 
     GMAIL_USERNAME = 'Automated.Greenhouse.ttu@gmail.com' 
-    GMAIL_PASSWORD = 'RaiderPower1!' 
+    GMAIL_PASSWORD = '' 
     msg = MIMEText("""Hello, I am the Automated Greenhouse. There was an issue storing data for the {}. Could you please send out an engineer to fix me? Thank you
     This is an integral part of the greenhouse's automation, so I will be shutting down.
     **This is an automated message, responding to this will not notify anyone.**""".format(sensName))
@@ -132,14 +121,12 @@ def dailyEmail():
     SMTP_SERVER = 'smtp.gmail.com' #Email Server 
     SMTP_PORT = 587 #Server Port 
     GMAIL_USERNAME = 'Automated.Greenhouse.ttu@gmail.com' 
-    GMAIL_PASSWORD = 'RaiderPower1!'
+    GMAIL_PASSWORD = ''
     lister = []
     inp = []
     Max = 0
     Min = 0
     try:
-        #out = """SELECT * FROM temperature WHERE taken_at > "{}" AND taken_at < "{}";""".format((datetime.datetime.now()-datetime.timedelta(days=20)).strftime("%Y-%m-%d"),datetime.datetime.now().strftime("%Y-%m-%d"))
-        #print(out)
         cur.execute("""SELECT * FROM temperature WHERE taken_at > "{}" AND taken_at < "{}";""".format((datetime.datetime.now()-datetime.timedelta(days=9)).strftime("%Y-%m-%d"),datetime.datetime.now().strftime("%Y-%m-%d")))#Internal Temp
         for id, temp, taken_at in cur:
             lister.append(temp)
@@ -265,12 +252,6 @@ def dailyEmail():
         s.send_message(msg)
         #s.sendmail(msg)
         s.quit()
-        """
-        context = ssl.create_default_context()
-        with smtplib.SMTP_SSL(SMTP_SERVER,SMTP_PORT,context=context) as server:
-            server.login(me,GMAIL_PASSWORD)
-            server.sendmail(me,you,msg)
-        """
     except mariadb.Error as e:
         print(f"Error: {e}")
         cleanExit()
