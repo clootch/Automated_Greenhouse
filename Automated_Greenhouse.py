@@ -29,6 +29,10 @@ done with its specific tasks, then repeats
 
 
 class data:
+    """
+    This class is used to transport data to and from different threads that might need this information. 
+    Currently, there is no stopping race conditions.  
+    """
     def __init__(self,temp,humid,heat,cool,light,vent,shade,water,action):
         self.temp = temp
         self.humid = humid
@@ -41,9 +45,10 @@ class data:
         self.action = action
 
 def noData(sensName):
-    """ This function is used to send an email if there was an issue trying to access the database and either it failed to open and get data from a table. 
-        There are two instances of this function, this one, and one that will directly follow it. 
-        The reason for this difference is that the sensors that access this function are integral to the systems functionality (Soil Mositure, Internal Temperature, etc)
+    """ 
+    This function is used to send an email if there was an issue trying to access the database and either it failed to open and get data from a table. 
+    There are two instances of this function, this one, and one that will directly follow it. 
+    The reason for this difference is that the sensors that access this function are integral to the systems functionality (Soil Mositure, Internal Temperature, etc)
     """
     SMTP_SERVER = 'smtp.gmail.com' #Email Server 
     SMTP_PORT = 587 #Server Port 
@@ -54,7 +59,7 @@ def noData(sensName):
     **This is an automated message, responding to this will not notify anyone.**""".format(sensName))
     me = 'Automated.Greenhouse.TTU@gmail.com'
     you = 'tpwmustang@gmail.com'
-    msg['Subject'] = 'Hello, This is a test email'
+    msg['Subject'] = 'ERROR: Greenhouse Issues!'
     msg['From'] = me
     msg['To'] = you
     s = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
@@ -65,6 +70,10 @@ def noData(sensName):
     sys.exit(1)
 
 def noDataExt(sensName):
+    """ 
+    This function is used to send an email if there was an issue trying to access the database and either it failed to open and get data from a table. 
+    This function is only accessed by sensors that are NOT integral to the system (Exterior Temperature/Humidity, Wind Speed, Rain, Etc.)
+    """
     SMTP_SERVER = 'smtp.gmail.com' #Email Server 
     SMTP_PORT = 587 #Server Port 
     GMAIL_USERNAME = 'Automated.Greenhouse.ttu@gmail.com' 
@@ -74,7 +83,7 @@ def noDataExt(sensName):
     **This is an automated message, responding to this will not notify anyone.**""".format(sensName))
     me = 'Automated.Greenhouse.TTU@gmail.com'
     you = 'tpwmustang@gmail.com'
-    msg['Subject'] = 'Hello, This is a test email'
+    msg['Subject'] = 'ERROR: Greenhouse Issues!'
     msg['From'] = me
     msg['To'] = you
     s = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
@@ -93,7 +102,7 @@ def dataStorageFail(sensName):
     **This is an automated message, responding to this will not notify anyone.**""".format(sensName))
     me = 'Automated.Greenhouse.TTU@gmail.com'
     you = 'tpwmustang@gmail.com'
-    msg['Subject'] = 'Hello, This is a test email'
+    msg['Subject'] = 'ERROR: Greenhouse Issues!'
     msg['From'] = me
     msg['To'] = you
     s = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
@@ -104,6 +113,10 @@ def dataStorageFail(sensName):
     sys.exit(1)
 
 def average(inp):
+    """
+    Simple average algorithm. 
+    Takes in array input, finds the total length and the total of all points added together, returns the average. 
+    """
     count = 0
     total = 0
     for x in inp:
@@ -112,12 +125,19 @@ def average(inp):
     return (total/count)
 
 def total(inp):
+    """
+    Simple Total algorithm. 
+    Takes in array input, finds the total of all the points added together, and returns it
+    """
     total = 0
     for x in inp:
         total += x
     return total
 
 def dailyEmail():
+    """
+    This function sends out the daily email. 
+    """
     SMTP_SERVER = 'smtp.gmail.com' #Email Server 
     SMTP_PORT = 587 #Server Port 
     GMAIL_USERNAME = 'Automated.Greenhouse.ttu@gmail.com' 
@@ -236,27 +256,27 @@ def dailyEmail():
         Number of times venting system was activated: {} Times
         Number of times lighting system was activated: {} Times
          """.format(dataPasser.action[0], dataPasser.action[1],dataPasser.action[2],dataPasser.action[3],dataPasser.action[4],dataPasser.action[5])
-
-
         msg = MIMEText(mess+actions)
         me = 'Automated.Greenhouse.ttu@gmail.com'
         you = 'tpwmustang@gmail.com, hunter.hughes@ttu.edu'
         msg['Subject'] = "Daily Generated Report: {}".format(datetime.date.today())
         msg['From'] = me
         msg['To'] = you
-        
         s = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         s.starttls()
-        #s.ehlo()
         s.login(GMAIL_USERNAME, GMAIL_PASSWORD)
         s.send_message(msg)
-        #s.sendmail(msg)
         s.quit()
     except mariadb.Error as e:
         print(f"Error: {e}")
         cleanExit()
 
 def cleanExit():
+    """
+    Clean Exit function.
+    This function makes sure that every sensor that controls an exterior system. Such as the Light System. 
+    Only called when an exception is thrown and system requires shutdown. 
+    """
     if dataPasser.light == 1:
         #turn lights off
         GPIO.output(23,False)
@@ -274,22 +294,21 @@ def cleanExit():
         #Turn off drip irrigation
         GPIO.output(12,False)
     sys.exit(1)
-    #Clean exit here, make it where everything is shut :)
 
 def Interior(name): #Thread 1
     #This should include DHT22, Lux, Shade System, and Light System. 
-    shade = 0 #Either 0 or 1, shade on or off
-    lights = 0 #Either 0 or 1, lights on or off
+    shade = 0 #Either 0 or 1, shade off or on
+    lights = 0 #Either 0 or 1, lights off or on
     countDHT = 0 #Counter, counts up if sensor did not collect data
-    countTSL = 0
-    vent = 0
+    countTSL = 0 #Counter, counts up if sensor did not collect data
+    vent = 0 #Vent state, Either 0 or 1, Vent closed or open
     servo = GPIO.PWM(13,50)
     servo.start(0)
     servo2 = GPIO.PWM(19,50)
     servo2.start(0)
     while True:
         time.sleep(5)
-        humid, temp = dht.read_retry(dht.DHT22,4)#This device is set for pin 4, might change...
+        humid, temp = dht.read_retry(dht.DHT22,4)
         print(temp)
         print(humid)
         if humid is not None and temp is not None:
