@@ -657,9 +657,6 @@ def soil(name): #Thread 4
             print("Stemma Data could not be collected")
             countStemma += 1
             #Didn't collect value
-
-        #WORK NEEDED HERE, GET SOIL DATA, STORE IT TOO
-        #need to check soil moisture here, then convert the value to percentage...
         if satPercent >= 60:
             #drip off
             GPIO.output(12,False)
