@@ -475,12 +475,6 @@ def temperatureControl(name): #Thread 2
         if datetime.datetime.now().strftime("%H:%M:%S") >= "00:00:00" and datetime.datetime.now().strftime("%H:%M:%S") <= "01:00:00" and sent == 1:
             sent = 0
         time.sleep(30)
-
-
- 
-
-
-#WORK MORE WITH THE VANE AND RAIN GAUGE CODE HERE
 def Exterior(name): #Thread 3
     countDHTout = 0
     countWind = 0
@@ -497,16 +491,12 @@ def Exterior(name): #Thread 3
     def spin():
         global wind_count
         wind_count = wind_count + 1
-        #print("spins " + str(wind_count))
     def rain():
         global rain_count
         rain_count += 1
-        #print("spins " + str(wind_count))
-    
     def reset_rain():
         global rain_count
         rain_count = 0
-
     def rainfall(time_sec):
         global rain_count  
         water = rain_count * water_const * mmToIn
@@ -688,7 +678,7 @@ if __name__ == "__main__":
     w = threading.Thread(target=Interior,args=(1,))
     x = threading.Thread(target=temperatureControl,args=(2,))
     y = threading.Thread(target=Exterior,args=(3,))
-    z = threading.Thread(target=soil,args=(4,))#all good here
+    z = threading.Thread(target=soil,args=(4,))
     GPIO.setup(12,GPIO.OUT)#irrigation system
     GPIO.setup(23,GPIO.OUT)#lighting system
     GPIO.setup(17,GPIO.OUT)#heating system
